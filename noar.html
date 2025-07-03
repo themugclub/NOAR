@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Analysis: The NOAR Platform</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Calm Harmony (Stone, Slate, Teal, Amber) -->
+    <!-- Application Structure Plan: A thematic, single-page dashboard structure is used to transform the linear report into an engaging, non-linear exploration. The user can navigate via a sticky header to key modules: 'The Problem' (Before/After comparison), 'Ecosystem' (interactive diagram of participants), 'The Process' (step-by-step workflow), 'Platform Model' (analysis using the Four Lenses), and 'Strategic Impact' (visualizing network effects, monetization, and future outlook). This structure prioritizes user-driven discovery over passive reading, making the complex concepts of the platform more digestible and memorable. -->
+    <!-- Visualization & Content Choices: 
+        - The Problem: Goal: Compare. Method: Side-by-side HTML/CSS layout. Interaction: Visual contrast. Justification: Immediately shows NOAR's value.
+        - Ecosystem: Goal: Organize. Method: Interactive HTML/CSS radial layout. Interaction: Click to update detail pane. Justification: More engaging than a static table, reveals relationships.
+        - The Process: Goal: Organize/Change. Method: Horizontal HTML/CSS flexbox flowchart. Interaction: Click to expand details. Justification: Simplifies a complex workflow.
+        - Value Unit: Goal: Inform. Method: HTML/CSS 'flippable' cards. Interaction: Click to reveal. Justification: Simple, active engagement.
+        - Monetization: Goal: Compare. Method: Bar Chart (Chart.js/Canvas). Interaction: Tooltips. Justification: Clearly visualizes the cost-recovery model.
+        - Network Effects: Goal: Relationships. Method: Polar Area Chart (Chart.js/Canvas) and HTML/CSS diagram. Interaction: Animation. Justification: Visually represents the abstract concept of growing market liquidity.
+        - Future: Goal: Inform. Method: Tabbed interface. Interaction: Click to switch views. Justification: Organizes dense text without clutter.
+    -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .nav-link { transition: color 0.2s, border-color 0.2s; }
+        .nav-link.active { color: #0d9488; border-bottom-color: #0d9488; }
+        .nav-link:not(.active) { border-bottom-color: transparent; }
+        .content-section { display: none; }
+        .content-section.active { display: block; }
+        .participant-node { transition: transform 0.2s, box-shadow 0.2s; }
+        .participant-node:hover { transform: scale(1.05); }
+        .participant-node.active { transform: scale(1.1); box-shadow: 0 0 0 4px #ccfbf1; }
+        .process-step { transition: background-color 0.2s, border-color 0.2s, box-shadow 0.2s; }
+        .process-step.active { background-color: #f0fdfa; border-color: #14b8a6; }
+        .tab-button.active { background-color: #0d9488; color: white; }
+        .tab-button { transition: background-color 0.2s, color 0.2s; }
+        .chart-container { position: relative; width: 100%; max-width: 500px; margin-left: auto; margin-right: auto; height: 320px; max-height: 40vh; }
+        @media (min-width: 768px) { .chart-container { height: 350px; } }
+    </style>
+</head>
+<body class="bg-stone-50 text-slate-800">
+
+    <div class="min-h-screen">
+        <header class="bg-white/80 backdrop-blur-lg sticky top-0 z-50 border-b border-stone-200">
+            <nav class="container mx-auto px-4">
+                <div class="flex justify-between items-center h-16">
+                    <h1 class="text-xl font-bold text-teal-700">NOAR Platform Analysis</h1>
+                    <div class="hidden md:flex items-center space-x-6">
+                        <a href="#home" class="nav-link font-medium text-slate-600 hover:text-teal-600 border-b-2 pb-1">Home</a>
+                        <a href="#problem" class="nav-link font-medium text-slate-600 hover:text-teal-600 border-b-2 pb-1">The Problem</a>
+                        <a href="#ecosystem" class="nav-link font-medium text-slate-600 hover:text-teal-600 border-b-2 pb-1">Ecosystem</a>
+                        <a href="#process" class="nav-link font-medium text-slate-600 hover:text-teal-600 border-b-2 pb-1">The Process</a>
+                        <a href="#model" class="nav-link font-medium text-slate-600 hover:text-teal-600 border-b-2 pb-1">Platform Model</a>
+                        <a href="#impact" class="nav-link font-medium text-slate-600 hover:text-teal-600 border-b-2 pb-1">Strategic Impact</a>
+                    </div>
+                     <div class="md:hidden">
+                        <select id="mobile-nav" class="bg-white border border-stone-300 rounded-md py-2 px-3 text-slate-700 focus:outline-none focus:ring-2 focus:ring-teal-500">
+                            <option value="home">Home</option>
+                            <option value="problem">The Problem</option>
+                            <option value="ecosystem">Ecosystem</option>
+                            <option value="process">The Process</option>
+                            <option value="model">Platform Model</option>
+                            <option value="impact">Strategic Impact</option>
+                        </select>
+                    </div>
+                </div>
+            </nav>
+        </header>
+
+        <main class="container mx-auto p-4 md:p-8">
+            <section id="home" class="content-section">
+                <div class="text-center py-16">
+                    <h2 class="text-4xl md:text-5xl font-bold tracking-tight text-teal-800">The National Open Access Registry (NOAR)</h2>
+                    <p class="mt-4 text-lg md:text-xl text-slate-600 max-w-3xl mx-auto">An interactive analysis of India's state-mandated digital platform that is revolutionizing the nation's electricity market.</p>
+                    <p class="mt-8 text-slate-600 max-w-3xl mx-auto">This application deconstructs the NOAR report, providing an explorable overview of its function, participants, and strategic importance. Use the navigation above to dive into the different facets of this regulated utility platform, from the market failures it solves to the network effects it cultivates.</p>
+                </div>
+            </section>
+
+            <section id="problem" class="content-section">
+                <div class="text-center mb-12">
+                    <h2 class="text-3xl font-bold text-slate-800">The Power Market Imperative</h2>
+                    <p class="mt-2 text-lg text-slate-600 max-w-3xl mx-auto">NOAR was created to solve deep-seated inefficiencies in India's short-term electricity market. This section illustrates the transformation from a fragmented, manual system to a unified, automated platform.</p>
+                </div>
+                <div class="grid md:grid-cols-2 gap-8">
+                    <div class="bg-amber-50 border border-amber-200 rounded-lg p-6">
+                        <h3 class="text-2xl font-semibold text-amber-800 mb-4 text-center">BEFORE NOAR: The Manual Maze</h3>
+                        <ul class="space-y-4">
+                            <li class="flex items-start">
+                                <span class="text-2xl mr-4">⏳</span>
+                                <div><strong class="text-amber-900">High Transaction Costs:</strong> Navigating a labyrinth of state-specific rules and manual paperwork created significant administrative burdens and delays.</div>
+                            </li>
+                            <li class="flex items-start">
+                                <span class="text-2xl mr-4">❓</span>
+                                <div><strong class="text-amber-900">Information Asymmetry:</strong> Data on available transmission corridors was opaque and not accessible to all, hindering efficient trading decisions.</div>
+                            </li>
+                            <li class="flex items-start">
+                                <span class="text-2xl mr-4">🐌</span>
+                                <div><strong class="text-amber-900">Slow & Inflexible:</strong> The manual workflow, with turnaround times of several hours, was a bottleneck for integrating variable renewable energy (RE) into the grid.</div>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="bg-teal-50 border border-teal-200 rounded-lg p-6">
+                        <h3 class="text-2xl font-semibold text-teal-800 mb-4 text-center">AFTER NOAR: The Digital Highway</h3>
+                        <ul class="space-y-4">
+                            <li class="flex items-start">
+                                <span class="text-2xl mr-4">⚡️</span>
+                                <div><strong class="text-teal-900">Process Automation:</strong> A centralized, single-window platform automates the entire transaction lifecycle, from application to settlement.</div>
+                            </li>
+                            <li class="flex items-start">
+                                <span class="text-2xl mr-4">📊</span>
+                                <div><strong class="text-teal-900">Full Transparency:</strong> Provides a single source of truth with real-time, online access to corridor availability and transaction data for all stakeholders.</div>
+                            </li>
+                            <li class="flex items-start">
+                                <span class="text-2xl mr-4">💨</span>
+                                <div><strong class="text-teal-900">Fast & Responsive:</strong> Drastically reduces turnaround time from hours to minutes, enabling a nimble market capable of balancing the grid and integrating RE at scale.</div>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+
+            <section id="ecosystem" class="content-section">
+                <div class="text-center mb-12">
+                    <h2 class="text-3xl font-bold text-slate-800">Mapping the Platform Ecosystem</h2>
+                     <p class="mt-2 text-lg text-slate-600 max-w-3xl mx-auto">NOAR orchestrates interactions between four distinct groups. Click on each participant to understand their role and motivation within this regulated marketplace.</p>
+                </div>
+                <div class="grid lg:grid-cols-3 gap-8 items-start">
+                    <div class="lg:col-span-2 relative h-[450px] md:h-[500px] flex items-center justify-center">
+                        <div class="absolute w-full h-full flex items-center justify-center">
+                             <div class="w-72 h-72 md:w-96 md:h-96 border-2 border-dashed border-slate-300 rounded-full"></div>
+                        </div>
+                        <div id="participant-producers" class="participant-node cursor-pointer absolute top-0 left-1/2 -translate-x-1/2 bg-white p-4 rounded-lg shadow-md border-2 border-transparent w-40 text-center">
+                            <div class="text-3xl">🏭</div>
+                            <h4 class="font-bold mt-1">Producers</h4>
+                            <p class="text-xs text-slate-500">Sellers / Injectors</p>
+                        </div>
+                        <div id="participant-consumers" class="participant-node cursor-pointer absolute bottom-0 left-1/2 -translate-x-1/2 bg-white p-4 rounded-lg shadow-md border-2 border-transparent w-40 text-center">
+                           <div class="text-3xl">🏢</div>
+                           <h4 class="font-bold mt-1">Consumers</h4>
+                           <p class="text-xs text-slate-500">Buyers / Drawees</p>
+                        </div>
+                        <div id="participant-intermediaries" class="participant-node cursor-pointer absolute left-0 top-1/2 -translate-y-1/2 bg-white p-4 rounded-lg shadow-md border-2 border-transparent w-40 text-center">
+                           <div class="text-3xl">🤝</div>
+                           <h4 class="font-bold mt-1">Intermediaries</h4>
+                           <p class="text-xs text-slate-500">Facilitators</p>
+                        </div>
+                         <div id="participant-regulators" class="participant-node cursor-pointer absolute right-0 top-1/2 -translate-y-1/2 bg-white p-4 rounded-lg shadow-md border-2 border-transparent w-40 text-center">
+                           <div class="text-3xl">🏛️</div>
+                           <h4 class="font-bold mt-1">Orchestrator</h4>
+                           <p class="text-xs text-slate-500">Regulators</p>
+                        </div>
+                        <div class="w-48 h-48 bg-teal-600 rounded-full flex items-center justify-center text-white font-bold text-3xl shadow-xl">NOAR</div>
+                    </div>
+                    <div class="lg:col-span-1 bg-white p-6 rounded-lg shadow-lg border border-slate-200 h-full">
+                        <div id="participant-details">
+                            <h3 id="details-title" class="text-2xl font-semibold text-slate-700 mb-4">Select a Participant</h3>
+                            <div id="details-content" class="text-slate-600 space-y-3">
+                                <p>Click on one of the four participant groups on the left to see their key functions, motivations, and role within the NOAR ecosystem.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            
+            <section id="process" class="content-section">
+                <div class="text-center mb-12">
+                    <h2 class="text-3xl font-bold text-slate-800">The Core Interaction: Automating Market Access</h2>
+                    <p class="mt-2 text-lg text-slate-600 max-w-3xl mx-auto">NOAR's fundamental purpose is to digitize and streamline the end-to-end process of securing short-term open access. Explore the five key steps of this digital workflow.</p>
+                </div>
+                <div class="w-full overflow-x-auto pb-4">
+                    <div class="flex items-start space-x-4 md:space-x-0 md:grid md:grid-cols-5 md:gap-4 min-w-[900px] md:min-w-0">
+                        <div class="flex-1 text-center cursor-pointer process-step border-2 border-slate-200 rounded-lg p-4 bg-white" data-step="1">
+                            <div class="flex items-center justify-center w-12 h-12 bg-teal-100 text-teal-700 font-bold rounded-full mx-auto text-xl">1</div>
+                            <h4 class="font-semibold mt-3">Registration</h4>
+                        </div>
+                        <div class="flex items-center justify-center flex-shrink-0 h-24">
+                             <div class="w-full border-t-2 border-dashed border-slate-300 hidden md:block"></div>
+                             <div class="text-2xl text-slate-400 md:hidden">&rarr;</div>
+                        </div>
+                        <div class="flex-1 text-center cursor-pointer process-step border-2 border-slate-200 rounded-lg p-4 bg-white" data-step="2">
+                            <div class="flex items-center justify-center w-12 h-12 bg-teal-100 text-teal-700 font-bold rounded-full mx-auto text-xl">2</div>
+                            <h4 class="font-semibold mt-3">Standing Clearance</h4>
+                        </div>
+                         <div class="flex items-center justify-center flex-shrink-0 h-24">
+                            <div class="w-full border-t-2 border-dashed border-slate-300 hidden md:block"></div>
+                            <div class="text-2xl text-slate-400 md:hidden">&rarr;</div>
+                        </div>
+                        <div class="flex-1 text-center cursor-pointer process-step border-2 border-slate-200 rounded-lg p-4 bg-white" data-step="3">
+                            <div class="flex items-center justify-center w-12 h-12 bg-teal-100 text-teal-700 font-bold rounded-full mx-auto text-xl">3</div>
+                            <h4 class="font-semibold mt-3">Application</h4>
+                        </div>
+                         <div class="flex items-center justify-center flex-shrink-0 h-24">
+                            <div class="w-full border-t-2 border-dashed border-slate-300 hidden md:block"></div>
+                            <div class="text-2xl text-slate-400 md:hidden">&rarr;</div>
+                        </div>
+                        <div class="flex-1 text-center cursor-pointer process-step border-2 border-slate-200 rounded-lg p-4 bg-white" data-step="4">
+                            <div class="flex items-center justify-center w-12 h-12 bg-teal-100 text-teal-700 font-bold rounded-full mx-auto text-xl">4</div>
+                            <h4 class="font-semibold mt-3">Processing</h4>
+                        </div>
+                         <div class="flex items-center justify-center flex-shrink-0 h-24">
+                            <div class="w-full border-t-2 border-dashed border-slate-300 hidden md:block"></div>
+                             <div class="text-2xl text-slate-400 md:hidden">&rarr;</div>
+                        </div>
+                        <div class="flex-1 text-center cursor-pointer process-step border-2 border-slate-200 rounded-lg p-4 bg-white" data-step="5">
+                            <div class="flex items-center justify-center w-12 h-12 bg-teal-100 text-teal-700 font-bold rounded-full mx-auto text-xl">5</div>
+                            <h4 class="font-semibold mt-3">Scheduling</h4>
+                        </div>
+                    </div>
+                </div>
+                <div id="process-details" class="mt-8 bg-white p-6 rounded-lg shadow-lg border border-slate-200 min-h-[150px]">
+                    <p class="text-slate-600">Click on a step above to see a detailed description of that stage in the process.</p>
+                </div>
+            </section>
+            
+            <section id="model" class="content-section">
+                <div class="text-center mb-12">
+                    <h2 class="text-3xl font-bold text-slate-800">The Platform Business Model</h2>
+                    <p class="mt-2 text-lg text-slate-600 max-w-3xl mx-auto">This section deconstructs NOAR's mechanics through the four lenses of platform strategy, revealing how value is created, exchanged, and governed.</p>
+                </div>
+                <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <div class="bg-white p-6 rounded-lg shadow-md border border-slate-200">
+                        <h3 class="text-xl font-semibold mb-3 text-teal-700">1. Value Unit</h3>
+                        <p class="text-slate-600">The core currency exchanged. The platform's value revolves around the primary right to transmit power and the crucial data generated as a byproduct.</p>
+                        <ul class="mt-4 space-y-2 text-sm">
+                            <li><strong class="font-medium text-slate-800">Primary:</strong> The right to transmit a defined amount of power (MW) for a specific 15-minute time block.</li>
+                            <li><strong class="font-medium text-slate-800">Secondary:</strong> Transparent data on corridor availability, transaction history, and certified 'Standing Clearances'.</li>
+                        </ul>
+                    </div>
+                     <div class="bg-white p-6 rounded-lg shadow-md border border-slate-200">
+                        <h3 class="text-xl font-semibold mb-3 text-teal-700">2. Core Interaction</h3>
+                        <p class="text-slate-600">The primary activity connecting users. It's the end-to-end digital process of securing transmission rights, which NOAR automates and simplifies.</p>
+                         <ul class="mt-4 space-y-2 text-sm">
+                            <li><strong class="font-medium text-slate-800">Activity:</strong> End-to-end digital process for securing STOA.</li>
+                            <li><strong class="font-medium text-slate-800">Key Feature:</strong> Automated validation of transmission availability, reducing approval time from hours to minutes.</li>
+                        </ul>
+                    </div>
+                     <div class="bg-white p-6 rounded-lg shadow-md border border-slate-200">
+                        <h3 class="text-xl font-semibold mb-3 text-teal-700">3. Ecosystem</h3>
+                        <p class="text-slate-600">The dynamic interplay between participants. Value is co-created as producers supply power, consumers procure it, and intermediaries facilitate trades.</p>
+                        <ul class="mt-4 space-y-2 text-sm">
+                             <li><strong class="font-medium text-slate-800">Value Creation:</strong> Generators find a national market, consumers find competitive prices and green energy.</li>
+                             <li><strong class="font-medium text-slate-800">Symbiosis:</strong> Power exchanges provide price discovery, while NOAR provides the essential backend logistics (grid access).</li>
+                        </ul>
+                    </div>
+                     <div class="bg-white p-6 rounded-lg shadow-md border border-slate-200">
+                        <h3 class="text-xl font-semibold mb-3 text-teal-700">4. Infrastructure</h3>
+                        <p class="text-slate-600">The foundation of the platform. A unique duality of a sophisticated IT system and an ironclad regulatory framework that mandates its use.</p>
+                        <ul class="mt-4 space-y-2 text-sm">
+                             <li><strong class="font-medium text-slate-800">Technology:</strong> A centralized IT platform with standardized APIs for seamless integration with all stakeholders.</li>
+                             <li><strong class="font-medium text-slate-800">Regulation:</strong> CERC regulations provide legal authority and mandate use, creating a trusted and predictable environment.</li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+            
+            <section id="impact" class="content-section">
+                <div class="text-center mb-12">
+                    <h2 class="text-3xl font-bold text-slate-800">Strategic Defensibility & Impact</h2>
+                    <p class="mt-2 text-lg text-slate-600 max-w-3xl mx-auto">Unlike commercial platforms, NOAR's strength comes from powerful network effects combined with an absolute regulatory monopoly. This section explores its strategic position, monetization, and future trajectory.</p>
+                </div>
+
+                <div class="grid lg:grid-cols-2 gap-8 items-start">
+                    <div>
+                        <h3 class="text-2xl font-semibold text-center mb-4 text-slate-700">Network Effects: The Virtuous Cycle</h3>
+                        <p class="text-slate-600 text-center mb-6">The platform becomes more valuable as more participants join, creating a liquid and efficient market. This is amplified by data network effects, where more usage makes the grid operator "smarter".</p>
+                        <div class="chart-container">
+                            <canvas id="networkEffectsChart"></canvas>
+                        </div>
+                    </div>
+                    <div>
+                        <h3 class="text-2xl font-semibold text-center mb-4 text-slate-700">Monetization: Cost Recovery Model</h3>
+                         <p class="text-slate-600 text-center mb-6">NOAR's goal is not profit, but to operate as a self-sustaining public utility. Revenue from modest fees is used to cover operational costs, while the true economic value is passed on to the market as efficiency gains.</p>
+                        <div class="chart-container">
+                             <canvas id="monetizationChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-16">
+                     <h3 class="text-2xl font-semibold text-center mb-4 text-slate-700">Future Trajectory</h3>
+                     <p class="text-slate-600 text-center mb-8 max-w-3xl mx-auto">Despite its success, NOAR faces challenges and holds significant opportunities. Its evolution will be critical for shaping India's energy future.</p>
+                     <div class="max-w-4xl mx-auto bg-white rounded-lg shadow-lg border border-slate-200">
+                        <div class="flex border-b border-slate-200">
+                            <button class="tab-button flex-1 p-4 font-medium text-slate-600" data-tab="challenges">Challenges</button>
+                            <button class="tab-button flex-1 p-4 font-medium text-slate-600" data-tab="opportunities">Opportunities</button>
+                            <button class="tab-button flex-1 p-4 font-medium text-slate-600" data-tab="recommendations">Recommendations</button>
+                        </div>
+                        <div class="p-6">
+                            <div id="challenges" class="tab-content hidden">
+                                <ul class="space-y-3 list-disc list-inside text-slate-600">
+                                    <li><strong>State-Level Alignment:</strong> Inconsistencies in regulations and technological sophistication among State Load Despatch Centres (SLDCs) can still create friction.</li>
+                                    <li><strong>Data and Cyber Security:</strong> As critical national infrastructure, ensuring robust cyber security against potential threats is a paramount and continuous responsibility.</li>
+                                </ul>
+                            </div>
+                             <div id="opportunities" class="tab-content hidden">
+                                <ul class="space-y-3 list-disc list-inside text-slate-600">
+                                    <li><strong>Data-as-a-Service (DaaS):</strong> The aggregated data is a strategic asset that could be used to offer advanced analytics, forecasting, and risk analysis services.</li>
+                                    <li><strong>Expansion of Scope:</strong> The robust architecture could be leveraged to manage more complex market products, such as ancillary services, capacity markets, or even cross-border trade.</li>
+                                </ul>
+                            </div>
+                             <div id="recommendations" class="tab-content hidden">
+                               <ul class="space-y-3 list-disc list-inside text-slate-600">
+                                    <li><strong>Deepen LDC Integration:</strong> Promote standardized APIs and data formats with all SLDCs to create a truly seamless national market.</li>
+                                    <li><strong>Develop an Analytics Layer:</strong> Build a public-facing analytics dashboard and explore a tiered DaaS model for premium subscribers.</li>
+                                    <li><strong>Leverage as a Regulatory Sandbox:</strong> Use the platform to pilot and test innovative market mechanisms, such as dynamic transmission pricing or new products for energy storage.</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+
+    const sections = document.querySelectorAll('.content-section');
+    const navLinks = document.querySelectorAll('.nav-link');
+    const mobileNav = document.getElementById('mobile-nav');
+
+    function setActiveSection(hash) {
+        const targetHash = hash || '#home';
+        
+        sections.forEach(section => {
+            if ('#' + section.id === targetHash) {
+                section.classList.add('active');
+            } else {
+                section.classList.remove('active');
+            }
+        });
+
+        navLinks.forEach(link => {
+            if (link.getAttribute('href') === targetHash) {
+                link.classList.add('active');
+            } else {
+                link.classList.remove('active');
+            }
+        });
+
+        if (mobileNav) {
+            mobileNav.value = targetHash.substring(1);
+        }
+    }
+    
+    function handleNavigation(event) {
+        event.preventDefault();
+        const targetHash = event.currentTarget.getAttribute('href');
+        window.location.hash = targetHash;
+    }
+
+    navLinks.forEach(link => link.addEventListener('click', handleNavigation));
+
+    if (mobileNav) {
+        mobileNav.addEventListener('change', (event) => {
+            window.location.hash = event.target.value;
+        });
+    }
+
+    window.addEventListener('hashchange', () => setActiveSection(window.location.hash));
+    
+    setActiveSection(window.location.hash);
+
+    const participantNodes = document.querySelectorAll('.participant-node');
+    const detailsTitle = document.getElementById('details-title');
+    const detailsContent = document.getElementById('details-content');
+
+    const participantData = {
+        producers: {
+            title: "Producers (Sellers)",
+            content: `<strong>Key Participants:</strong> Power Generating Stations (Thermal, Hydro, RE), Captive Power Plants.<br><br><strong>Role:</strong> Create and supply the core value unit (electricity).<br><br><strong>Motivation:</strong> Maximize revenue by selling surplus power to a national market, gaining access beyond local offtakers.`
+        },
+        consumers: {
+            title: "Consumers (Buyers)",
+            content: `<strong>Key Participants:</strong> State Distribution Companies (DISCOMs), large Commercial & Industrial (C&I) consumers.<br><br><strong>Role:</strong> Consume the core value unit (electricity).<br><br><strong>Motivation:</strong> Procure electricity at competitive prices, ensure supply reliability, and meet Renewable Purchase Obligations (RPOs).`
+        },
+        intermediaries: {
+            title: "Intermediaries",
+            content: `<strong>Key Participants:</strong> Licensed Power Traders, Power Exchanges (e.g., IEX, PXIL).<br><br><strong>Role:</strong> Facilitate transactions by providing market-making, aggregation, and price discovery services.<br><br><strong>Motivation:</strong> Earn fees/margins by simplifying the trading process for producers and consumers.`
+        },
+        regulators: {
+            title: "Orchestrator & Regulators",
+            content: `<strong>Key Participants:</strong> National/Regional/State Load Despatch Centres (NLDC, RLDCs, SLDCs), CERC.<br><br><strong>Role:</strong> Operate the platform, set and enforce rules, ensure grid security, and approve/reject transactions.<br><br><strong>Motivation:</strong> Not for profit, but to ensure grid stability, non-discriminatory access, and market efficiency.`
+        }
+    };
+    
+    participantNodes.forEach(node => {
+        node.addEventListener('click', () => {
+            participantNodes.forEach(n => n.classList.remove('active', 'border-teal-500'));
+            node.classList.add('active', 'border-teal-500');
+            const participantId = node.id.split('-')[1];
+            detailsTitle.textContent = participantData[participantId].title;
+            detailsContent.innerHTML = participantData[participantId].content;
+        });
+    });
+
+    const processSteps = document.querySelectorAll('.process-step');
+    const processDetails = document.getElementById('process-details');
+
+    const processData = {
+        1: { title: "Step 1: Registration", content: "The journey begins with a one-time registration on the NOAR portal. Any entity intending to avail STOA must register, paying a nominal fee for a three-year validity. Users are classified into key types like Utilities and Applicants." },
+        2: { title: "Step 2: Obtaining Standing Clearance", content: "Before transacting, an entity must apply through NOAR for a 'standing clearance'. This is a critical pre-approval where the relevant Load Despatch Centre (LDC) verifies grid connectivity and technical readiness, acting as a 'passport' to the national market." },
+        3: { title: "Step 3: Application Submission", content: "With clearance, an 'Applicant' (trader or exchange) can submit a transaction request for either a bilateral deal between two parties or a collective transaction discovered on a power exchange." },
+        4: { title: "Step 4: Automated Processing & Approval", content: "This is NOAR's core automation engine. The system automatically checks the requested power flow against real-time availability of transmission corridors, providing a recommendation for approval or rejection based on technical parameters within minutes." },
+        5: { title: "Step 5: Scheduling & Payment", content: "Once approved, transaction details are electronically sent to LDCs for scheduling. All associated charges are calculated and paid through the platform's integrated payment gateway, ensuring financial settlement." }
+    };
+
+    processSteps.forEach(step => {
+        step.addEventListener('click', () => {
+            const stepNumber = step.dataset.step;
+            processSteps.forEach(s => s.classList.remove('active'));
+            step.classList.add('active');
+            processDetails.innerHTML = `<h4 class="text-xl font-semibold mb-2">${processData[stepNumber].title}</h4><p class="text-slate-600">${processData[stepNumber].content}</p>`;
+        });
+    });
+
+    const tabButtons = document.querySelectorAll('.tab-button');
+    const tabContents = document.querySelectorAll('.tab-content');
+
+    function setActiveTab(tabName) {
+         tabButtons.forEach(button => {
+            if (button.dataset.tab === tabName) {
+                button.classList.add('active');
+            } else {
+                button.classList.remove('active');
+            }
+        });
+        tabContents.forEach(content => {
+            if (content.id === tabName) {
+                content.style.display = 'block';
+            } else {
+                content.style.display = 'none';
+            }
+        });
+    }
+
+    tabButtons.forEach(button => {
+        button.addEventListener('click', () => {
+            setActiveTab(button.dataset.tab);
+        });
+    });
+    
+    setActiveTab('challenges');
+
+    function createNetworkEffectsChart() {
+        const ctx = document.getElementById('networkEffectsChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'polarArea',
+            data: {
+                labels: ['Producers', 'Consumers', 'Intermediaries', 'Data Points', 'Transactions', 'Market Liquidity'],
+                datasets: [{
+                    label: 'Platform Value Growth',
+                    data: [4, 5, 3, 6, 7, 8],
+                    backgroundColor: [
+                        'rgba(13, 148, 136, 0.5)',
+                        'rgba(15, 118, 110, 0.5)',
+                        'rgba(17, 94, 89, 0.5)',
+                        'rgba(245, 158, 11, 0.5)',
+                        'rgba(217, 119, 6, 0.5)',
+                        'rgba(202, 138, 4, 0.5)'
+                    ],
+                    borderColor: '#ffffff',
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    r: {
+                        pointLabels: { font: { size: 14 } },
+                        grid: { color: 'rgba(203, 213, 225, 0.5)' },
+                        angleLines: { color: 'rgba(203, 213, 225, 0.5)' }
+                    }
+                },
+                plugins: {
+                    legend: { position: 'bottom', labels: { color: '#475569' } },
+                    tooltip: {
+                         callbacks: {
+                            label: function(context) {
+                                let label = context.label || '';
+                                if (label) {
+                                    label += ': ';
+                                }
+                                label += `Value Index ${context.raw}`;
+                                return label;
+                            }
+                        }
+                    },
+                    title: { display: true, text: 'Virtuous Cycle of Value Creation', color: '#334155', font: { size: 16 } }
+                }
+            }
+        });
+    }
+
+    function createMonetizationChart() {
+        const ctx = document.getElementById('monetizationChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: ['Registration Fee', 'Application Fee', 'Transaction Charges'],
+                datasets: [{
+                    label: 'Fee/Charge Type',
+                    data: [1, 2, 10],
+                    backgroundColor: [
+                        'rgba(245, 158, 11, 0.6)',
+                        'rgba(217, 119, 6, 0.6)',
+                        'rgba(13, 148, 136, 0.6)',
+                    ],
+                    borderColor: [
+                        'rgb(245, 158, 11)',
+                        'rgb(217, 119, 6)',
+                        'rgb(13, 148, 136)',
+                    ],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                indexAxis: 'y',
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: {
+                        beginAtZero: true,
+                        grid: { display: false },
+                         ticks: {
+                            display: false
+                        }
+                    },
+                    y: {
+                        grid: { display: false },
+                        ticks: { color: '#475569', font: {size: 14} }
+                    }
+                },
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                         callbacks: {
+                            label: function(context) {
+                                const label = context.label || '';
+                                let valueDesc = '';
+                                if(label === 'Registration Fee') valueDesc = 'Nominal one-time fee for platform upkeep.';
+                                if(label === 'Application Fee') valueDesc = 'Per-transaction fee for processing.';
+                                if(label === 'Transaction Charges') valueDesc = 'Collected & passed through to grid owners/operators.';
+                                return valueDesc;
+                            }
+                        }
+                    },
+                     title: { display: true, text: 'Fee Structure (Illustrative)', color: '#334155', font: { size: 16 } }
+                }
+            }
+        });
+    }
+    
+    createNetworkEffectsChart();
+    createMonetizationChart();
+
+});
+</script>
+</body>
+</html>
